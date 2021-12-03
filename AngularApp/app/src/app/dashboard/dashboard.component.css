@@ -1,0 +1,14 @@
+@property --num {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.animated {
+  transition: --num 1s;
+  counter-reset: num var(--num);
+}
+
+  .animated::after {
+    content: counter(num);
+  }

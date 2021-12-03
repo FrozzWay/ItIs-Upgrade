@@ -5,12 +5,14 @@ from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import (
     create_engine, Column, Integer, String,
     func, select, DateTime, ForeignKey, Boolean, and_, distinct, text)
+import os
+from sqlalchemy.exc import InvalidRequestError, UnboundExecutionError
 
 from log_parser import parser
 
 Base = declarative_base()
 
-path_to_geoip2_db = 'GeoLite2-Country.mmdb'
+path_to_geoip2_db = os.path.join(os.getcwd(), 'static', 'GeoLite2-Country.mmdb')
 
 
 class CartRequests(Base):
@@ -81,15 +83,15 @@ class PostgreSQL:
     def __init__(self):
         self.engine = None
 
-    def init_db(self):
+    def init_db(self, path_to_logs_file):
         self.engine = create_engine(f"postgresql://postgres:123@localhost:5432/ITIS", future=True)
         Base.metadata.bind = self.engine
 
-        #Base.metadata.drop_all()
-        #Base.metadata.create_all()
+        Base.metadata.drop_all()
+        Base.metadata.create_all()
 
-        parser.parse("logs.txt")
-        #self.fill_db()
+        parser.parse(path_to_logs_file)
+        self.fill_db()
 
     def fill_db(self):
         if self.check_db():
@@ -183,15 +185,20 @@ class PostgreSQL:
         print("Done filling goods_requests")
 
     def check_db(self):
-        with Session(self.engine) as session:
-            result = session.execute(select(Category))
-        return False if result.first() is None else True
+        try:
+            with Session(self.engine) as session:
+                result = session.execute(select(Category))
+            return False if result.first() is None else True
+        except UnboundExecutionError:
+            return False
+        except InvalidRequestError:
+            return True
 
     # Сколько брошенных (не оплаченных) корзин имеется за определенный период?
     def rep_unpayed_carts(self, s, p):
         with Session(self.engine) as session:
             stmt = (
-                select(CartRequests.cart_id).
+                select(distinct(CartRequests.cart_id)).
                 join(CartInfo).
                 where(CartRequests.datetime < p).
                 where(s < CartRequests.datetime).
@@ -203,20 +210,29 @@ class PostgreSQL:
     # Какое количество пользователей совершали повторные покупки за определенный период?
     def rep_repeated_payments(self, s, p):
         with Session(self.engine) as session:
-            sbqr = (
+            stmt = (
                 select((func.count(CartInfo.id) - 1).label("amount"), CartInfo.ip).
                 where(CartInfo.payed == True).
                 where(CartInfo.payed_time < p).
                 where(CartInfo.payed_time > s).
                 group_by(CartInfo.ip).
                 having(func.count(CartInfo.id) > 1)
-            ).subquery()
+            )
+
+            data = session.execute(stmt).all()
+            data_dict = dict()
+            for row in data:
+                data_dict[row[1]] = row[0]
+
+            sbqr = stmt.subquery()
 
             stmt = (
                 select(func.sum(sbqr.c.amount))
             )
-            result = session.execute(stmt)
-        return result.scalar()
+
+            amount = session.execute(stmt).scalar()
+
+        return amount, data_dict
 
     # Товары из какой категории чаще всего покупают совместно с товаром из заданной категории?
     def rep_pattern_buy(self, category, item):
@@ -254,7 +270,7 @@ class PostgreSQL:
             stmt = select(distinct(sbqr.c.cart_id), sbqr.c.category)
 
             sbqr = stmt.subquery()
-            stmt = select(func.count(sbqr.c.category), sbqr.c.category).group_by(sbqr.c.category)
+            stmt = select(sbqr.c.category, func.count(sbqr.c.category)).group_by(sbqr.c.category).order_by(func.count(sbqr.c.category).desc())
 
             result = session.execute(stmt)
         return result.all()
@@ -311,25 +327,27 @@ class PostgreSQL:
         return result.all()
 
     # Какая нагрузка (число запросов) на сайт за астрономический час?
-    def server_load_per_hour(self):
+    def rep_server_load_per_hour(self):
         with Session(self.engine) as session:
             cart_requests = select(
                 CartRequests.datetime,
                 func.date_part('day', CartRequests.datetime).label('day'),
-                func.date_part('hour', CartRequests.datetime).label('hour')
+                func.date_part('hour', CartRequests.datetime).label('hour'),
+                func.date_part('month', CartRequests.datetime).label('month')
             )
             goods_requests = select(
                 GoodsRequests.datetime,
                 func.date_part('day', GoodsRequests.datetime).label('day'),
-                func.date_part('hour', GoodsRequests.datetime).label('hour')
+                func.date_part('hour', GoodsRequests.datetime).label('hour'),
+                func.date_part('month', GoodsRequests.datetime).label('month')
             )
             requests = cart_requests.union(goods_requests).subquery()
 
             stmt = (
-                select(func.count().label("count"), requests.c.day, requests.c.hour).
+                select(func.count().label("count"), requests.c.day, requests.c.hour, requests.c.month).
                 select_from(requests).
-                group_by(requests.c.day, requests.c.hour).
-                order_by(requests.c.day, requests.c.hour)
+                group_by(requests.c.day, requests.c.hour, requests.c.month).
+                order_by(requests.c.month, requests.c.day, requests.c.hour)
             )
             result = session.execute(stmt)
             statistics = result.all()
@@ -339,6 +357,46 @@ class PostgreSQL:
             avg = session.execute(stmt).scalar()
 
         return avg, statistics
+
+    def overall_statistic(self):
+        with Session(self.engine) as session:
+            unique_users = session.execute(
+                select(func.count()).select_from(IpCountry)
+            ).scalar()
+            items_views = session.execute(
+                select(func.count()).select_from(GoodsRequests)
+            ).scalar()
+            payed_carts = session.execute(
+                select(func.count()).select_from(CartInfo).where(CartInfo.payed == True)
+            ).scalar()
+
+            sub = select(func.count()).select_from(IpCountry).group_by(IpCountry.country).subquery()
+
+            countries = session.execute(
+                select(func.count()).select_from(sub)
+            ).scalar()
+
+            return {
+                "unique_users": unique_users,
+                "items_views": items_views,
+                "payed_carts": payed_carts,
+                "countries": countries
+            }
+
+    def get_categories(self):
+        with Session(self.engine) as session:
+            response = {}
+            results = session.execute(
+                select(Category.name, Goods.name).
+                join(Goods)
+            ).all()
+            for row in results:
+                category_name = row[0]
+                item_name = row[1]
+                if response.get(category_name) is None:
+                    response[category_name] = []
+                response[category_name].append(item_name)
+        return response
 
 
 db = PostgreSQL()

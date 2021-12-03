@@ -3,9 +3,9 @@ from collections import namedtuple
 
 
 class Parser:
-    def __init__(self):
+    def init_parser(self):
         self.logs = {
-            "ip_sorted":  dict(),
+            "ip_sorted": dict(),
             "only_carts_ip_sorted": dict()
         }
         self.prepared_categories = dict()
@@ -15,6 +15,8 @@ class Parser:
         self.prepared_goods_requests = []
 
     def parse(self, filename):
+        self.init_parser()
+
         self.read_logs(filename)
         self.write_mod_logs()
         self.prepare_categories()

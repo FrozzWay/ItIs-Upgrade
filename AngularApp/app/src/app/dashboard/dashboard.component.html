@@ -1,0 +1,388 @@
+
+<div class="container">
+  <!--Breadcrumb-->
+  <div class="d-flex align-items-center justify-content-between">
+    <nav aria-label="breadcrumb" class="fs-4 mt-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="#">Uploading logs</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+      </ol>
+    </nav>
+    <span class="fs-5 ps-2" id="filename" style="color: #5f676e;">filename_placeholder</span>
+  </div>
+  <!--overall statistics-->
+  <div class="card">
+    <h5 class="card-header">Overall</h5>
+    <div class="card-body">
+      <div class="fs-5 py-1 hstack">
+        <span class="pe-4">Countries:</span>
+        <span class="animated fw-bold" id="countries"></span>
+      </div>
+      <div class="fs-5 py-1 hstack">
+        <span class="pe-4 text-nowrap">Category / Items views:</span>
+        <span class="animated fw-bold" id="items_views"></span>
+      </div>
+      <div class="fs-5 py-1 hstack">
+        <span class="pe-4">Payed carts:</span>
+        <span class="animated fw-bold" id="payed_carts"></span>
+      </div>
+      <div class="fs-5 py-1 hstack">
+        <span class="pe-4">Unique users:</span>
+        <span class="animated fw-bold" id="unique_users"></span>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="fw-light mt-3">Reports section</h3><hr>
+
+  <!--Reports WITHOUT input-->
+  <div class="row">
+
+    <div class="col-sm-6 mt-3">
+      <div class="card text-white bg-secondary">
+        <div class="card-body">
+          <h5 class="card-title">Server load</h5>
+          <p class="card-text">Check server load statistics per hour</p>
+          <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#server_load_Modal" (click)="rep_server_load()">View data</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 mt-3">
+      <div class="card  text-white bg-secondary">
+        <div class="card-body">
+          <h5 class="card-title">Actions per country</h5>
+          <p class="card-text">Report that shows number of users actions groupped by country</p>
+          <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#actions_per_country_Modal" (click)="rep_actions_per_country()">View data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!--Reports with DATE input-->
+  <div class="row">
+
+    <div class="col-sm-6 mt-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Unpayed carts</h5>
+          <p class="card-text">Report that shows number of unpayed carts for a certain period</p>
+          <div class="">
+            <table class="table table-borderless d-block">
+              <tbody>
+                <tr>
+                  <th><span class="fw-normal">Date from</span></th>
+                  <th><input type="date" id="rep1_date1" (change)="check_for_button_unlock(1)"></th>
+                </tr>
+                <tr>
+                  <th><span class="fw-normal">Date to</span></th>
+                  <th><input type="date" id="rep1_date2" (change)="check_for_button_unlock(1)"></th>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-primary" id="rep1_button" data-bs-toggle="modal" data-bs-target="#unpayed_carts_Modal" (click)="rep_unpayed_carts()" disabled>View data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 mt-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Repeat purchases</h5>
+          <p class="card-text">Report that shows number of repeat purchases for a certain period</p>
+          <div class="">
+            <table class="table table-borderless d-block">
+              <tbody>
+                <tr>
+                  <th><span class="fw-normal">Date from</span></th>
+                  <th><input type="date" id="rep2_date1" (change)="check_for_button_unlock(2)"></th>
+                </tr>
+                <tr>
+                  <th><span class="fw-normal">Date to</span></th>
+                  <th><input type="date" id="rep2_date2" (change)="check_for_button_unlock(2)"></th>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-primary" id="rep2_button" data-bs-toggle="modal" data-bs-target="#repeat_purchases_Modal" (click)="rep_repeat_purchases()" disabled>View data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!--Reports with CATEGORY&ITEM input-->
+  <div class="row">
+
+    <div class="col-sm-6 mt-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Reports on categories and goods</h5>
+          <p class="card-title">Before generating reports you need to specify the following:</p>
+          <select class="form-select mt-1" id="category_select" (change)="update_items_list()">
+            <option selected disabled>Category</option>
+            <option [value]="i" *ngFor="let category of categories; index as i; first as isFirst">{{category}}</option>
+          </select>
+          <select class="form-select mt-2" id="item_select" (change)="enable_reports_buttons()" disabled>
+            <option selected disabled>Item</option>
+            <option [value]="item" *ngFor="let item of items[category_index]">{{item}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-sm-6 mt-3">
+      <div class="card">
+        <div class="card-body">
+          <p class="card-text">At what time of day is specified category most often viewed</p>
+          <div class="d-inline-flex align-items-center">
+            <button class="btn btn-primary text-nowrap me-2" id="rep_time_pattern_button" data-bs-toggle="modal" data-bs-target="#time_pattern_Modal" (click)="rep_time_pattern()" disabled>View data</button>
+            <select class="form-select" id="k_select">
+              <option value="2">2</option>
+              <option value="4" selected>4</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <p class="card-title mt-2">Users from which country are most often interested in products from certain category</p>
+          <button class="btn btn-primary" id="rep_pattern_view_button" data-bs-toggle="modal" data-bs-target="#pattern_view_Modal" (click)="rep_pattern_view()" disabled>View data</button>
+          <p class="card-text mt-2">Products from which category are most often bought together with a product from a given category</p>
+          <button class="btn btn-primary" id="rep_pattern_buy_button" data-bs-toggle="modal" data-bs-target="#pattern_buy_Modal" (click)="rep_pattern_buy()" disabled>View data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h3 class="fw-light mt-5">2021</h3>
+
+  <!-- Modals -->
+
+  <!--actions_per_country_Modal-->
+  <div class="modal fade" id="actions_per_country_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Actions per country</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Country</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let country of actions_per_country_data['country']; index as i; ">
+                <td>{{country}}</td>
+                <td>{{actions_per_country_data['actions'][i]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--server_load_Modal-->
+  <div class="modal fade" id="server_load_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Server Load per hour</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" *ngIf="server_load_data['loaded']">
+          <p>Average: {{server_load_data["avg"]}}</p>
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col">Day</th>
+                <th scope="col">Hour</th>
+                <th scope="col">Requests amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of server_load_data['statistics']">
+                <td>{{row["month"]}}</td>
+                <td>{{row["day"]}}</td>
+                <td>{{row["hour"]}}</td>
+                <td>{{row["requests_amount"]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--unpayed_carts_Modal-->
+  <div class="modal fade" id="unpayed_carts_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Unpayed carts</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" *ngIf="unpayed_carts['loaded']">
+          <p>Amount: {{unpayed_carts["list"].length}}</p>
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Card ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of unpayed_carts['list']">
+                <td>{{row}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--repeat_purchases_Modal-->
+  <div class="modal fade" id="repeat_purchases_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Repeat purchases</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" *ngIf="repeat_purchases['loaded']">
+          <p>Total amount: {{repeat_purchases["total_amount"]}}</p>
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Users's IP</th>
+                <th scope="col">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of repeat_purchases['ip_list']; index as i;">
+                <td>{{row}}</td>
+                <td>{{repeat_purchases['amount'][i]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--time_pattern_Modal-->
+  <div class="modal fade" id="time_pattern_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Time pattern report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" *ngIf="time_pattern['loaded']">
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Time period</th>
+                <th scope="col">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let amount of time_pattern['amount']; index as i;  first as isFirst;">
+                <td *ngIf="isFirst">00:00 - {{i * (24 / time_pattern['amount'].length) + (24 / time_pattern['amount'].length)}}:00</td>
+                <td *ngIf="!isFirst">{{(i-1) * (24 / time_pattern['amount'].length) + (24 / time_pattern['amount'].length)}}:00 - {{i * (24 / time_pattern['amount'].length) + (24 / time_pattern['amount'].length)}}:00</td>
+                <td>{{amount}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--pattern_view_Modal-->
+  <div class="modal fade" id="pattern_view_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Country actions specified report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Country</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let country of pattern_view['country']; index as i; ">
+                <td>{{country}}</td>
+                <td>{{pattern_view['actions'][i]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--pattern_buy_Modal-->
+  <div class="modal fade" id="pattern_buy_Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pattern buy report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table mt-2">
+            <thead>
+              <tr>
+                <th scope="col">Category</th>
+                <th scope="col">Purchases</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let category of pattern_buy['category']; index as i; ">
+                <td>{{category}}</td>
+                <td>{{pattern_buy['purchases'][i]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
