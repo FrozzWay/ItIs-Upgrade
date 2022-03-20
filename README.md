@@ -1,11 +1,16 @@
 # Тестовое задание (школа UpGrade)
 Использованный стек:
-**Flask** - backend framework, **PostgreSQL** - database, **SQLAlchemy** - python SQL Toolkit
-**Angular** - frontend framework, **Bootstrap** - CSS
+
+- **Flask** - backend framework, **PostgreSQL** - database, **SQLAlchemy** - python SQL Toolkit
+
+- **Angular** - frontend framework, **Bootstrap** - CSS
 
 Развернуто на Debian с помощью:
-**Gunicorn** -  WSGI HTTP Server
-**Nginx** - proxy
+
+- **Gunicorn** -  WSGI HTTP Server
+
+- **Nginx** - proxy
+
 Запущено в всемирную паутину, используя переадресацию портов (port forwarding) в PIA VPN&copy;
 
 
